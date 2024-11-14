@@ -1,0 +1,149 @@
+name: "mracle"
+
+networks:
+  mracle-net:
+    name: mracle-net
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 192.168.60.0/24
+
+services:
+  mracle-dev:
+    image: mracle-dev:latest
+    container_name: mracle-dev
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: development
+    command:
+      - rye
+      - run
+      - uvicorn
+      - mracle.app:create_app
+      - --host
+      - 0.0.0.0
+      - --port
+      - $DEV_DEPLOYMENT_PORT
+      - --reload
+      - --factory
+      - --log-config
+      - /app/data/${LOG_CONFIG_PATH}
+    networks:
+      - mracle-net
+    ports:
+      - $DEV_DEPLOYMENT_PORT:8000
+    env_file:
+      - .env
+    environment:
+      - DATA_DIR=/app/data
+    volumes:
+      - $DATA_DIR:/app/data:ro
+      - ./src:/app/src:ro
+
+  mracle-prod:
+    image: mracle-prod:0.1.0
+    container_name: mracle-prod
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: production
+    command:
+      - uvicorn
+      - mracle.app:create_app
+      - --host
+      - 0.0.0.0
+      - --port
+      - $DEV_DEPLOYMENT_PORT
+      - --reload
+      - --factory
+      - --log-config
+      - /app/data/${LOG_CONFIG_PATH}
+    networks:
+      - mracle-net
+    ports:
+      - $PROD_DEPLOYMENT_PORT:8000
+    env_file:
+      - .env
+    environment:
+      - DATA_DIR=/app/data
+    volumes:
+      - $DATA_DIR:/app/data:ro
+
+  mracle-test:
+    image: mracle-prod:latest
+    container_name: mracle-test
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+      target: production
+    command:
+      - uvicorn
+      - mracle.app:create_app
+      - --host
+      - 0.0.0.0
+      - --port
+      - $DEV_DEPLOYMENT_PORT
+      - --reload
+      - --factory
+      - --log-config
+      - /app/data/${LOG_CONFIG_PATH}
+    networks:
+      - mracle-net
+    ports:
+      - $TEST_DEPLOYMENT_PORT:8000
+    env_file:
+      - .env
+    environment:
+      - DATA_DIR=/app/data
+    volumes:
+      - $DATA_DIR:/app/data:ro
+
+  ############ LANGFUSE #############
+  langfuse-db:
+    image: postgres:latest
+    container_name: langfuse-db
+    restart: $RESTART_POLICY
+    # user: "${UID}:${GID}"
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=postgres
+      - POSTGRES_DB=postgres
+      - PGDATA=/pgdata
+    ports:
+      - 5432:5432
+    volumes:
+      # - $LIBRARY_BASE_PATH/deployment/volumes/langfuse-db:/pgdata
+      - langfuse-db-volume:/pgdata
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  langfuse-server:
+    image: ghcr.io/langfuse/langfuse:2.63.1
+    container_name: langfuse-server
+    restart: $RESTART_POLICY
+    depends_on:
+      langfuse-db:
+        condition: service_healthy
+    ports:
+      - $LANGFUSE_PORT:3000
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres@langfuse-db:5432/postgres
+      - NEXTAUTH_SECRET=mysecret
+      - SALT=mysalt
+      - HOSTNAME=0.0.0.0
+      - PORT=3000
+      - NEXTAUTH_URL=http://localhost:3000
+      - TELEMETRY_ENABLED=false
+      - NEXT_PUBLIC_SIGN_UP_DISABLED=false
+      - LANGFUSE_ENABLE_EXPERIMENTAL_FEATURES=false
+      # - LANGFUSE_DEFAULT_PROJECT_ID=1
+      # - LANGFUSE_DEFAULT_PROJECT_ROLE=ADMIN
+      # - AUTH_DISABLE_SIGNUP=true
+      # - AUTH_DISABLE_USERNAME_PASSWORD=true
+
+volumes:
+  langfuse-db-volume:
