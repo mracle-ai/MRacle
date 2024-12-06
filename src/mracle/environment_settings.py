@@ -27,7 +27,10 @@ class EnvironmentSettings(BaseSettings):
     )
 
     # fmt: off
-    temp: int
+    library_base_path: str
+    data_dir: str
+    dev_deployment_host: str = "0.0.0.0"
+    dev_deployment_port: int = 8000
     # fmt: on
 
 

@@ -5,19 +5,13 @@ description = "mracle"
 
 readme = "README.md"
 
+requires-python = "==3.11.7"
+
 classifiers = [
-    "Intended Audience :: Science/Research",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: BSD License",
     "Programming Language :: Python",
-    "Topic :: Software Development",
-    "Topic :: Scientific/Engineering",
     "Operating System :: Microsoft :: Windows",
-    "Operating System :: POSIX",
-    "Operating System :: Unix",
-    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: 3.12",
 ]
 
 dependencies = [
@@ -26,16 +20,11 @@ dependencies = [
     "uvicorn",
     "python-multipart",
     "pydantic-settings>=2.4.0",
-    "langchain",
-    "langchain-openai",
-    "langfuse",
-    "werkzeug ==2.3.8",
     ## MISC
     "toml",
 ]
 
-[tool.rye]
-managed = true
+[tool.uv]
 dev-dependencies = [
     "ruff",
     ## DOCS
@@ -46,36 +35,15 @@ dev-dependencies = [
     "ipykernel",
 ]
 
-[[tool.rye.sources]]
-name = "default"
-url = "https://pypi.org/simple/"
-
-[tool.rye.scripts]
-placeholder = "mracle.scripts.placeholder:placeholder_script"
-
-[tool.pytest.ini_options]
-minversion = "7.0.0"
-addopts = [
-    "--import-mode=importlib",
-    "--color=yes",
-    "--verbose",
-]
-
-testpaths = ["tests"]
-
-# TODO: Make them inherit from yaml file
-log_cli = true
-log_cli_level = "INFO"
-log_cli_format = "%(asctime)-20s :: %(name)-8s :: %(levelname)-8s :: %(filename)s:%(lineno)d - (%(funcName)s) :: %(message)s"
-log_cli_date_format = "%Y-%m-%d %H:%M:%S"
-
 [tool.ruff]
 target-version = "py311"
 line-length = 88
 src = ["src"]
 respect-gitignore = true
 
-# extend-include = []
+extend-include = [
+    "*.ipynb"
+]
 
 extend-exclude = [
     "docs",
@@ -90,6 +58,7 @@ extend-exclude = [
 skip-magic-trailing-comma = false
 
 [tool.ruff.lint]
+ignore-init-module-imports = true
 
 select = [
     "B", # flake8-bugbear
@@ -107,7 +76,6 @@ select = [
     "RET", # return
     "RUF", # Enable all ruff-specific checks
     "SIM", # simplify
-    "S307", # eval
     "T20", # (disallow print statements) keep debugging statements out of the codebase
     "W", # pycodestyle warnings
     "ASYNC" # async
@@ -133,36 +101,6 @@ max-complexity = 10
 
 [tool.ruff.lint.isort]
 combine-as-imports = true
-
-# mypy section
-# Read more here: https://mypy.readthedocs.io/en/stable/config_file.html#using-a-pyproject-toml-file
-[tool.mypy]
-files = ["src/mracle"]
-strict = true
-show_error_codes = true
-
-# TODO: Check whether this is working
-[[tool.mypy.overrides]]
-module = "tests.*"
-ignore_missing_imports = true
-check_untyped_defs = true
-
-[tool.coverage.run]
-source = ['src/mracle']
-branch = true
-context = '${CONTEXT}'
-
-[tool.coverage.report]
-precision = 2
-exclude_lines = [
-    'pragma: no cover',
-    'raise NotImplementedError',
-    'if TYPE_CHECKING:',
-    '@overload',
-]
-
-[tool.hatch.metadata]
-allow-direct-references = true
 
 [build-system]
 requires = ["hatchling"]
