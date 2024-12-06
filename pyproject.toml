@@ -9,7 +9,6 @@ requires-python = "==3.11.7"
 
 classifiers = [
     "Programming Language :: Python",
-    "Operating System :: Microsoft :: Windows",
     "Operating System :: POSIX :: Linux",
     "Programming Language :: Python :: 3.11",
 ]
